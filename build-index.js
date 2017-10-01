@@ -52,7 +52,7 @@ const buildIndex = (db) => {
 	const writev = (docs, cb) => {
 		let docsI = 0
 		const iterate = (cb) => {
-			const doc = docs[docsI++]
+			const doc = docs[docsI++].chunk
 			addTokens(doc.id, doc.tokens, cb)
 		}
 

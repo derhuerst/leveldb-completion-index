@@ -3,6 +3,7 @@
 const parallel = require('async/parallel')
 // const intersectionBy = require('lodash/intersectionBy')
 const minBy = require('lodash/minBy')
+const hifo = require('hifo')
 
 const SEP = ':'
 // const BATCH_SIZE = 100
@@ -42,6 +43,8 @@ const query = (db, tokens, cb) => {
 	parallel(tasks, (err, sets) => {
 		if (err) return cb(err)
 
+		const results = hifo(hifo.highest('relevance'), 10)
+
 		const tokenWithLeast = minBy(tokens, t => Object.keys(sets[t]).length)
 		for (let docId in sets[tokenWithLeast]) {
 			let inEvery = true, relevance = 0
@@ -56,10 +59,10 @@ const query = (db, tokens, cb) => {
 				}
 			}
 
-			if (inEvery) {
-				console.error(docId, relevance)
-			}
+			if (inEvery) results.add({docId, relevance})
 		}
+
+		cb(null, results.data)
 	})
 }
 
