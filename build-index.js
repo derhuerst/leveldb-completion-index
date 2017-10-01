@@ -3,23 +3,18 @@
 const doWhilst = require('async/doWhilst')
 const {Writable} = require('stream')
 
-const SUM = Symbol.for('sum')
 const SEP = ':'
 const BATCH_SIZE = 100
-// const BATCH_SIZE = 1
 
 const countTokens = (tokens) => {
 	const counts = Object.create(null)
-	let sum = 0
 
 	const l = tokens.length
 	for (let i = 0; i < l; i++) {
 		const token = tokens[i]
-		sum++
 		if (!(token in counts)) counts[token] = 1
 		else counts[token]++
 	}
-	counts[SUM] = sum
 
 	return counts
 }
@@ -27,13 +22,18 @@ const countTokens = (tokens) => {
 const buildIndex = (db) => {
 	let batch = []
 
-	const write = (doc, _, cb) => {
-		const counts = countTokens(doc.tokens)
+	const addTokens = (docId, tokens, cb) => {
+		const counts = countTokens(tokens)
 		for (let token in counts) {
+			// We abuse the fact that LevelDB sorts its keys alphabetically by
+			// putting the token-in-doc frequency inside. When querying, we
+			// will get those with the highest frequency first.
+			const freq = counts[token] / tokens.length
+			const freqKey = ('00000' + Math.round(freq * 10000)).slice(-5)
 			batch.push({
 				type: 'put',
-				key: token + SEP + doc.id,
-				value: counts[SUM]
+				key: token + SEP + freqKey + SEP + docId,
+				value: freq + ''
 			})
 		}
 
@@ -45,27 +45,15 @@ const buildIndex = (db) => {
 		} else cb(null)
 	}
 
+	const write = (doc, _, cb) => {
+		addTokens(doc.id, doc.tokens, cb)
+	}
+
 	const writev = (docs, cb) => {
 		let docsI = 0
 		const iterate = (cb) => {
-			const doc = docs[docsI]
-			docsI++
-
-			const counts = countTokens(doc.tokens)
-			for (let token in counts) {
-				batch.push({
-					type: 'put',
-					key: token + SEP + doc.id,
-					value: counts[SUM]
-				})
-			}
-
-			if (batch.length >= BATCH_SIZE) {
-				db.batch(batch, (err) => {
-					batch = []
-					cb(err)
-				})
-			} else cb(null)
+			const doc = docs[docsI++]
+			addTokens(doc.id, doc.tokens, cb)
 		}
 
 		const test = () => docsI < docs.length
@@ -80,7 +68,6 @@ const buildIndex = (db) => {
 	}
 
 	return new Writable({objectMode: true, write, writev, final})
-	// return {write, writev, final}
 }
 
 module.exports = buildIndex
