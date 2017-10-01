@@ -18,7 +18,8 @@
 		"node": ">=6"
 	},
 	"dependencies": {
-		"async": "^2.5.0"
+		"async": "^2.5.0",
+		"lodash": "^4.17.4"
 	},
 	"devDependencies": {
 		"tap-min": "^1.2.2",
