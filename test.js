@@ -26,7 +26,7 @@ const buildDb = (items, cb) => {
 buildDb([
 	{id: 'a', tokens: ['foo', 'bar']},
 	{id: 'b', tokens: ['foo', 'bar', 'baz']},
-	{id: 'c', tokens: ['bar', 'baz', 'baz']}
+	{id: 'c', tokens: ['bar', 'baz', 'baz', 'fooo']}
 ], (err, db) => {
 	if (err) return showError(err)
 
@@ -38,6 +38,24 @@ buildDb([
 			t.equal(results[1].docId, 'b')
 			t.equal(typeof results[1].relevance, 'number')
 			t.equal((results[1].relevance + '').slice(0, 8), '0.333333')
+
+			t.end()
+		})
+	})
+
+	test('fuzzy', (t) => {
+		query(db, ['foo'], true, (err, results) => {
+			t.deepEqual(results[0], {docId: 'a', relevance: .5})
+
+			t.ok(results[1])
+			t.equal(results[1].docId, 'b')
+			t.equal(typeof results[1].relevance, 'number')
+			t.equal((results[1].relevance + '').slice(0, 8), '0.333333')
+
+			t.ok(results[2])
+			t.equal(results[2].docId, 'c')
+			t.equal(typeof results[2].relevance, 'number')
+			t.equal(results[2].relevance, 0.1875)
 
 			t.end()
 		})

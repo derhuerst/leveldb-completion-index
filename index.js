@@ -8,10 +8,10 @@ const hifo = require('hifo')
 const SEP = ':'
 // const BATCH_SIZE = 100
 
-const queryToken = (db, token) => (cb) => {
+const queryToken = (db, token, fuzzy = false) => (cb) => {
 	const entries = db.createReadStream({
-		gt: token + SEP + '!',
-		lt: token + SEP + '~',
+		gt: token + (fuzzy ? '' : SEP) + '!',
+		lt: token + (fuzzy ? '' : SEP) + '~',
 		reverse: true
 		// todo: limit
 	})
@@ -24,8 +24,15 @@ const queryToken = (db, token) => (cb) => {
 
 		const docId = key[2]
 		const freq = parseFloat(entry.value)
-		if (!Number.isNaN(freq)) results[docId] = freq
+		if (!Number.isNaN(freq)) {
+			if (fuzzy) {
+				results[docId] = token.length / key[0].length * freq
+			} else {
+				results[docId] = freq
+			}
+		}
 	})
+
 	entries.once('error', (err) => {
 		done = true
 		cb(err)
@@ -36,9 +43,14 @@ const queryToken = (db, token) => (cb) => {
 }
 
 // todo: fuzzy completion, based on partially matched tokens
-const query = (db, tokens, cb) => {
+const query = (db, tokens, fuzzy, cb) => {
+	if ('function' === typeof fuzzy) {
+		cb = fuzzy
+		fuzzy = false
+	} else fuzzy = !!fuzzy
+
 	const tasks = Object.create(null)
-	for (let token of tokens) tasks[token] = queryToken(db, token)
+	for (let token of tokens) tasks[token] = queryToken(db, token, fuzzy)
 
 	parallel(tasks, (err, sets) => {
 		if (err) return cb(err)

@@ -19,7 +19,7 @@ const db = level(path.join(__dirname, 'wiki.ldb'))
 db.once('open', () => {
 	new Suite()
 
-	.add('"computer science" query', {
+	.add('exact "computer science" query', {
 		defer: true,
 		fn: function (def) {
 			query(db, B, (err, results) => {
@@ -29,10 +29,30 @@ db.once('open', () => {
 		}
 	})
 
-	.add('"republic of" query', {
+	.add('exact "republic of" query', {
 		defer: true,
 		fn: function (def) {
 			query(db, A, (err, results) => {
+				if (err) def.reject(err)
+				else def.resolve()
+			})
+		}
+	})
+
+	.add('fuzzy "computer science" query', {
+		defer: true,
+		fn: function (def) {
+			query(db, B, true, (err, results) => {
+				if (err) def.reject(err)
+				else def.resolve()
+			})
+		}
+	})
+
+	.add('fuzzy "republic of" query', {
+		defer: true,
+		fn: function (def) {
+			query(db, A, true, (err, results) => {
 				if (err) def.reject(err)
 				else def.resolve()
 			})
