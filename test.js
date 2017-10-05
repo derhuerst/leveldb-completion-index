@@ -32,6 +32,9 @@ buildDb([
 
 	test('query', (t) => {
 		query(db, ['foo'], (err, results) => {
+			t.ok(Array.isArray(results))
+			t.equal(results.length, 2)
+
 			t.deepEqual(results[0], {docId: 'a', relevance: .5})
 
 			t.ok(results[1])
@@ -45,6 +48,9 @@ buildDb([
 
 	test('fuzzy', (t) => {
 		query(db, ['foo'], true, (err, results) => {
+			t.ok(Array.isArray(results))
+			t.equal(results.length, 3)
+
 			t.deepEqual(results[0], {docId: 'a', relevance: .5})
 
 			t.ok(results[1])
