@@ -39,7 +39,7 @@
 		"tap-min": "^1.2.2",
 		"tape": "^4.8.0",
 		"through2": "^2.0.3",
-		"wiki-article-name-encoding": "^0.1.0"
+		"wiki-article-name-encoding": "^0.2.0"
 	},
 	"scripts": {
 		"test": "node test.js | tap-min",
